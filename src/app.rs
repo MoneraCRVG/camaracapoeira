@@ -10,6 +10,7 @@ use crate::routes::home::HomePage;
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
+    
 
     view! {
         // injects a stylesheet into the document <head>
@@ -18,7 +19,8 @@ pub fn App() -> impl IntoView {
 
         <Stylesheet id="leptos" href="https://fonts.googleapis.com/css2?family=Zalando+Sans+Expanded:ital,wght@0,200..900;1,200..900&display=swap"/>
         // sets the document title
-        <Title text="Welcome to Leptos"/>
+        
+        <Title text="Associação Camará Capoeira"/>
 
         // content for this welcome page
         <Router>
