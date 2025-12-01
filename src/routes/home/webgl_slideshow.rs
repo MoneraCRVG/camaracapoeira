@@ -1,22 +1,29 @@
 use leptos::prelude::*;
 use leptos::html::Canvas;
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 use wasm_bindgen::prelude::*;
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 use wasm_bindgen::JsCast;
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 use web_sys::{WebGlRenderingContext as GL, WebGlProgram, WebGlShader, WebGlTexture};
-use std::ops::Deref;
 
 #[component]
 pub fn WebGLSlideshow(
-    images: Vec<String>,
+    #[prop(into)] images: Vec<String>, 
     #[prop(default = 5000)] interval_ms: u64,
     #[prop(default = 3000)] transition_ms: u64,
 ) -> impl IntoView {
     let canvas_ref = NodeRef::<Canvas>::new();
 
+    let _ = &images;
+    let _ = &interval_ms;
+    let _ = &transition_ms;
+
     #[cfg(feature = "hydrate")]
     Effect::new(move |_| {
         use std::rc::Rc;
         use std::cell::RefCell;
+        use std::ops::Deref;
 
         if images.is_empty() { return; }
 
@@ -98,7 +105,6 @@ pub fn WebGLSlideshow(
             start_transition_time: 0.0,
             uploaded_idx_0: None,
             uploaded_idx_1: None,
-            // PERFORMANCE FIX: Cache dimensions and frame count
             cached_width: initial_width,
             cached_height: initial_height,
             frame_count: 0,
@@ -143,14 +149,10 @@ pub fn WebGLSlideshow(
                 }
             }
 
-            // --- PERFORMANCE FIX: Reduce Layout Thrashing ---
-            // Only check DOM dimensions every 20 frames (approx 3 times/sec)
-            // This prevents the browser from recalculating layout 60 times a second.
             if s.frame_count % 20 == 0 {
                  let current_w = canvas_loop.client_width() as u32;
                  let current_h = canvas_loop.client_height() as u32;
                  
-                 // Only trigger GPU commands if size ACTUALLY changed
                  if current_w != s.cached_width || current_h != s.cached_height {
                      s.cached_width = current_w;
                      s.cached_height = current_h;
@@ -205,6 +207,8 @@ pub fn WebGLSlideshow(
     }
 }
 
+// Helpers guarded by cfg to prevent dead code warnings on server
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 struct AnimationState {
     current_img_idx: usize,
     next_img_idx: usize,
@@ -214,12 +218,12 @@ struct AnimationState {
     start_transition_time: f64,
     uploaded_idx_0: Option<usize>,
     uploaded_idx_1: Option<usize>,
-    // New fields for performance optimization
     cached_width: u32,
     cached_height: u32,
     frame_count: u64,
 }
 
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 fn request_animation_frame(f: &Closure<dyn FnMut()>) {
     web_sys::window()
         .unwrap()
@@ -227,6 +231,7 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
         .expect("should register `requestAnimationFrame` OK");
 }
 
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 fn create_texture(gl: &GL) -> WebGlTexture {
     let tex = gl.create_texture().unwrap();
     gl.bind_texture(GL::TEXTURE_2D, Some(&tex));
@@ -237,6 +242,7 @@ fn create_texture(gl: &GL) -> WebGlTexture {
     tex
 }
 
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 fn update_texture(gl: &GL, texture: &WebGlTexture, img: &web_sys::HtmlImageElement) {
     gl.bind_texture(GL::TEXTURE_2D, Some(texture));
     let _ = gl.tex_image_2d_with_u32_and_u32_and_image(
@@ -244,6 +250,7 @@ fn update_texture(gl: &GL, texture: &WebGlTexture, img: &web_sys::HtmlImageEleme
     );
 }
 
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 fn link_program(gl: &GL, vert_source: &str, frag_source: &str) -> Result<WebGlProgram, String> {
     let program = gl.create_program().ok_or("Unable to create shader object")?;
     let vert_shader = compile_shader(gl, GL::VERTEX_SHADER, vert_source)?;
@@ -258,6 +265,7 @@ fn link_program(gl: &GL, vert_source: &str, frag_source: &str) -> Result<WebGlPr
     }
 }
 
+#[cfg(any(feature = "hydrate", target_arch = "wasm32"))]
 fn compile_shader(gl: &GL, shader_type: u32, source: &str) -> Result<WebGlShader, String> {
     let shader = gl.create_shader(shader_type).ok_or("Unable to create shader object")?;
     gl.shader_source(&shader, source);

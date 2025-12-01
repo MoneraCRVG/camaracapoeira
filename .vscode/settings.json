@@ -1,6 +1,7 @@
 {
   "rust-analyzer.cargo.features": [
     "ssr",
-    "hydrate"
+    "hydrate",
+    "gateway_lb"
   ]
 }
