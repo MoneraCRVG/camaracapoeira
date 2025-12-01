@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 use leptos_meta::{Script, Link};
+use wasm_bindgen::JsValue; // Importação necessária
 use crate::components::stacks::hstack::{HStack, AlignItems as HAlign, FlexWrap};
 use crate::components::stacks::vstack::{VStack, AlignItems as VAlign};
 
@@ -59,7 +60,7 @@ fn LeafletMap() -> impl IntoView {
     Effect::new(move |_| {
         set_timeout(move || {
             let window = web_sys::window().unwrap();
-            use wasm_bindgen::JsValue;
+            // JsValue::from_str precisa de use wasm_bindgen::JsValue
             let l = js_sys::Reflect::get(&window, &JsValue::from_str("L"));
             
             if let Ok(l_obj) = l {
