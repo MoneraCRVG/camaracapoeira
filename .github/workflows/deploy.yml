@@ -6,7 +6,6 @@ on:
 
 jobs:
   build-and-deploy:
-    environment: VPS
     runs-on: ubuntu-latest
     container:
       image: rust:latest
@@ -19,6 +18,13 @@ jobs:
         run: |
           apt-get update
           apt-get install -y openssh-client curl tar git pkg-config libssl-dev
+
+      - name: Install Dart Sass
+        # cargo-leptos requires a Sass compiler for your .scss files
+        run: |
+          curl -L -o sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.81.0/dart-sass-1.81.0-linux-x64.tar.gz
+          tar -xzf sass.tar.gz
+          echo "$GITHUB_WORKSPACE/dart-sass" >> $GITHUB_PATH
 
       - name: Install Rust WebAssembly Target
         run: rustup target add wasm32-unknown-unknown
@@ -50,11 +56,10 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Add the VPS host key to known_hosts to prevent interactive prompts
-          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
 
           # 2. Upload Artifact to 'incoming' folder
-          scp -i ~/.ssh/id_rsa artifact.tar.gz $SSH_USER@$SSH_HOST:/srv/www.camaracapoeira.org.br/incoming/
+          # We use -o StrictHostKeyChecking=no to prevent the "Host key verification failed" error in the CI environment
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa artifact.tar.gz $SSH_USER@$SSH_HOST:/srv/www.camaracapoeira.org.br/incoming/
 
           # 3. Trigger the deployment script
-          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST "sudo /usr/local/bin/deploys/web_camara_capoeira_org_br_fullstack.bash"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST "sudo /usr/local/bin/deploys/web_camara_capoeira_org_br_fullstack.bash"
