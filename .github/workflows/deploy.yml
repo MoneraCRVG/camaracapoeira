@@ -6,6 +6,8 @@ on:
 
 jobs:
   build-and-deploy:
+    # 1. We MUST specify the environment to access variables defined in 'VPS'
+    environment: VPS 
     runs-on: ubuntu-latest
     container:
       image: rust:latest
@@ -18,13 +20,6 @@ jobs:
         run: |
           apt-get update
           apt-get install -y openssh-client curl tar git pkg-config libssl-dev
-
-      - name: Install Dart Sass
-        # cargo-leptos requires a Sass compiler for your .scss files
-        run: |
-          curl -L -o sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.81.0/dart-sass-1.81.0-linux-x64.tar.gz
-          tar -xzf sass.tar.gz
-          echo "$GITHUB_WORKSPACE/dart-sass" >> $GITHUB_PATH
 
       - name: Install Rust WebAssembly Target
         run: rustup target add wasm32-unknown-unknown
@@ -49,16 +44,25 @@ jobs:
       - name: Deploy to VPS
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_HOST: ${{ vars.HOST }}
-          SSH_USER: ${{ vars.USER }}
+          # These pull from the 'VPS' environment variables
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_USER: ${{ vars.SSH_USER }}
         run: |
+          # Debug: Print variable availability (will print empty if not found)
+          echo "Deploying to Host: $SSH_HOST as User: $SSH_USER"
+          
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ]; then
+            echo "Error: SSH_HOST or SSH_USER is empty. Check Settings -> Environments -> VPS -> Variables."
+            exit 1
+          fi
+
           # 1. Configure SSH
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
           # 2. Upload Artifact to 'incoming' folder
-          # We use -o StrictHostKeyChecking=no to prevent the "Host key verification failed" error in the CI environment
+          # -o StrictHostKeyChecking=no skips the 'Host key verification failed' error
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa artifact.tar.gz $SSH_USER@$SSH_HOST:/srv/www.camaracapoeira.org.br/incoming/
 
           # 3. Trigger the deployment script
