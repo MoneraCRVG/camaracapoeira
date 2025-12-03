@@ -34,11 +34,27 @@ jobs:
       - name: Prepare Artifact
         run: |
           mkdir -p deploy_staging
-          # Copy the compiled binary (name defaults to package name in Cargo.toml)
+          
+          # 1. Copy the compiled binary (name defaults to package name in Cargo.toml)
           cp target/release/camaracapoeira deploy_staging/
-          # Copy the 'site' folder containing WASM, JS, CSS, and assets
+          
+          # 2. Copy the 'site' folder containing WASM, JS, CSS, and assets
           cp -r target/site deploy_staging/site
-          # Create the tarball with a flat structure (binary and site folder at root)
+          
+          # 3. FIX: Copy resource directories (assets/images)
+          # The logs show the app fails to find the image directory. 
+          # We check if 'assets' or 'images' exist in the repo and copy them to staging.
+          if [ -d "assets" ]; then 
+            echo "Copying assets folder..."
+            cp -r assets deploy_staging/
+          fi
+          
+          if [ -d "images" ]; then 
+            echo "Copying images folder..."
+            cp -r images deploy_staging/
+          fi
+          
+          # 4. Create the tarball with a flat structure (binary and folders at root)
           tar -czf artifact.tar.gz -C deploy_staging .
 
       - name: Deploy to VPS
